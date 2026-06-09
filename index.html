@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鷹架工程與動態工作流程 · 學術報告簡報</title>
+<style>
+  :root{
+    --bg:#0c1320;
+    --bg2:#111c2e;
+    --panel:#16233a;
+    --ink:#eef3fb;
+    --muted:#9fb2cc;
+    --line:#26384f;
+    --accent:#5ad1c4;
+    --accent2:#7aa2ff;
+    --gold:#f5c451;
+    --serif:"Noto Serif TC","Songti TC","STSong",serif;
+    --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* ---------- deck ---------- */
+  #deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding:6vh 8vw 10vh;
+    opacity:0;
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .slide.active{display:flex;opacity:1;animation:fade .55s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+  .kicker{
+    font-size:.8rem;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:1.4rem;font-weight:600;
+  }
+  .slide h1{font-family:var(--serif);font-size:3.2rem;line-height:1.2;font-weight:700;letter-spacing:.01em}
+  .slide h2{font-family:var(--serif);font-size:2.5rem;line-height:1.25;font-weight:700;margin-bottom:.4rem}
+  .slide .subtitle{font-size:1.35rem;color:var(--accent2);margin-top:1rem;font-weight:500}
+  .slide .body{font-size:1.2rem;line-height:1.9;color:var(--muted);max-width:60ch;margin-top:1.4rem}
+  .rule{width:64px;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;margin:1.4rem 0}
+
+  ul.bullets{list-style:none;margin-top:1.6rem;max-width:74ch}
+  ul.bullets li{
+    position:relative;padding-left:2rem;margin-bottom:1.05rem;
+    font-size:1.18rem;line-height:1.7;color:var(--ink);
+    opacity:0;transform:translateX(-10px);
+    animation:slideIn .45s ease forwards;
+  }
+  .slide.active ul.bullets li{animation-delay:calc(var(--i)*.08s + .15s)}
+  @keyframes slideIn{to{opacity:1;transform:none}}
+  ul.bullets li::before{
+    content:"";position:absolute;left:0;top:.62em;
+    width:10px;height:10px;border-radius:2px;
+    background:var(--accent);transform:rotate(45deg);
+  }
+  ul.bullets li b{color:var(--gold);font-weight:700}
+
+  .note{
+    margin-top:auto;padding-top:1.4rem;border-top:1px dashed var(--line);
+    font-size:.95rem;color:var(--muted);max-width:80ch;
+    display:flex;gap:.6rem;align-items:flex-start;
+  }
+  .note .tag{color:var(--accent);font-weight:700;white-space:nowrap}
+  body:not(.notes) .note{display:none}
+
+  /* ---------- cover ---------- */
+  .slide.cover{justify-content:center;align-items:flex-start;
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(122,162,255,.18),transparent),
+               radial-gradient(900px 500px at 0% 110%,rgba(90,209,196,.16),transparent),var(--bg)}
+  .slide.cover h1{font-size:4rem;max-width:18ch}
+  .slide.cover .badge{
+    display:inline-flex;gap:.5rem;align-items:center;
+    border:1px solid var(--line);border-radius:999px;
+    padding:.5rem 1.1rem;font-size:.85rem;color:var(--muted);margin-bottom:2rem;
+  }
+  .slide.cover .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .slide.cover .meta{margin-top:2.4rem;color:var(--muted);font-size:1rem;line-height:1.8}
+
+  /* ---------- section divider ---------- */
+  .slide.section{justify-content:center;
+    background:linear-gradient(135deg,var(--bg2),var(--bg))}
+  .slide.section .num{font-family:var(--serif);font-size:8rem;color:var(--panel);
+    -webkit-text-stroke:2px var(--accent2);line-height:1;margin-bottom:1rem;font-weight:700;opacity:.9}
+  .slide.section h2{font-size:3.2rem}
+
+  /* ---------- comparison ---------- */
+  .slide.comparison ul.bullets li::before{background:var(--accent2)}
+
+  /* ---------- conclusion ---------- */
+  .slide.conclusion{background:linear-gradient(135deg,#11202e,var(--bg))}
+  .slide.conclusion .body{color:var(--ink);font-size:1.12rem}
+
+  /* ---------- references ---------- */
+  .slide.references ul.bullets li{font-size:1.02rem;color:var(--muted);margin-bottom:.85rem}
+  .slide.references ul.bullets li::before{background:var(--gold);border-radius:50%;transform:none}
+
+  /* ---------- chrome ---------- */
+  #bar{position:fixed;left:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .4s ease;z-index:20}
+  #hud{position:fixed;bottom:1.2rem;right:1.6rem;display:flex;gap:1rem;align-items:center;z-index:20;color:var(--muted);font-size:.9rem}
+  #hud .count{font-variant-numeric:tabular-nums;letter-spacing:.05em}
+  .navbtn{
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:1.1rem;
+    display:grid;place-items:center;transition:.2s;
+  }
+  .navbtn:hover{border-color:var(--accent);color:var(--accent)}
+  #brand{position:fixed;top:1.4rem;left:8vw;font-size:.78rem;letter-spacing:.2em;color:var(--line);text-transform:uppercase;z-index:20}
+  #help{position:fixed;bottom:1.2rem;left:1.6rem;font-size:.78rem;color:var(--line);z-index:20}
+  kbd{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:.72rem;color:var(--muted)}
+
+  /* progress dots in section count */
+  @media (max-width:760px){
+    .slide{padding:5vh 7vw 12vh}
+    .slide h1{font-size:2.2rem}.slide.cover h1{font-size:2.4rem}
+    .slide h2,.slide.section h2{font-size:1.8rem}
+    ul.bullets li{font-size:1rem}
+    #brand{left:7vw}
+  }
+</style>
+</head>
+<body>
+<div id="brand">Harness Engineering × Dynamic Workflows</div>
+<div id="deck"></div>
+<div id="bar"></div>
+<div id="hud">
+  <button class="navbtn" id="prev" title="上一頁 (←)">‹</button>
+  <span class="count"><span id="cur">1</span> / <span id="total">25</span></span>
+  <button class="navbtn" id="next" title="下一頁 (→)">›</button>
+</div>
+<div id="help">← → 翻頁 · <kbd>F</kbd> 全螢幕 · <kbd>N</kbd> 講者備註 · <kbd>O</kbd> 總覽</div>
+
+<script>
+const DATA = {
+  reportTitle:"鷹架工程與動態工作流程",
+  subtitle:"AI Agent 環境設計的理論框架與工程實踐",
+  slides: [
+    {type:"cover",title:"鷹架工程與動態工作流程",subtitle:"如何打造一個讓 AI 真正能幹活的「工作環境」",
+     body:"一句話總結：AI 厲不厲害，不只看模型本身聰不聰明，更要看我們替它準備了什麼樣的工具、規則和工作環境。本報告結合一份研究報告與 Claude Code 官方文件，談「為什麼」也談「怎麼做」。",
+     note:"先講理論（為什麼環境這麼重要），再講實作（在 Claude Code 上怎麼做出來），讓抽象概念有具體對照。"},
+    {type:"content",title:"摘要：這份報告在講什麼？",
+     body:"我們把 AI 助手拆成兩部分來看：一是「模型」（AI 的大腦），二是「鷹架 Harness」（包在大腦外面的工作環境，例如能用的工具、要遵守的規則、檢查對錯的機制）。報告的主張是：當各家模型越來越像、差距越來越小，真正拉開高下的反而是這個「環境」設計得好不好。",
+     bullets:["核心公式：AI 助手的實力 ＝ 模型本身 ＋ 它的工作環境（鷹架）",
+       "最有力的證據：同一顆大腦（Claude Opus），裝進不同環境，解題測驗成績竟差了 <b>16 分</b>（77 分 vs 93 分）",
+       "三個真實案例：OpenAI 的 Codex、Stripe 的 Minions、Anthropic 的代理服務",
+       "具體產品：Claude Code 的「動態工作流程」——讓 AI 自己寫程式去指揮一大群 AI 小幫手",
+       "產業意義：賺錢的關鍵正從「模型」本身，往上轉移到「環境與管理機制」這一層"]},
+    {type:"toc",title:"目錄",
+     bullets:["一、為什麼「模型」不再是重點，「環境」才是","二、基本觀念：三層功夫與 AI 的工作循環",
+       "三、好環境的七個零件，以及它最大的敵人","四、真實案例與關鍵數據",
+       "五、動態工作流程：把理論變成實際產品","六、把理論和實作擺在一起比較",
+       "七、這會怎麼影響商業競爭？還有哪些爭論","八、結論與參考來源"]},
+    {type:"section",title:"為什麼「模型」不再是重點，「環境」才是",num:"01"},
+    {type:"content",title:"核心觀念：AI 助手 ＝ 大腦 ＋ 工作環境",
+     body:"打個比方：一位很強的廚師（模型）如果只給他一把鈍刀、一個爛廚房，也做不出好菜；反過來，普通廚師配上一流的廚房與食材，反而能端出好料理。AI 也一樣——當模型越來越好取得，真正的工程功力轉向「怎麼幫 AI 佈置一個好用的廚房」。",
+     bullets:["<b>鷹架（Harness）是什麼？</b>就是包在 AI 大腦外面的整個工作環境：給它的指示、能用的工具、要守的規矩、安全的工作區、以及檢查對錯並回報的機制",
+       "黃金原則：<b>人類負責決定方向，AI 負責動手執行</b>（人掌舵、AI 划槳）",
+       "報告規模：整理了 16 個第一手來源、14 篇深入分析、9 大主題、17 個關鍵名詞",
+       "有趣的是：這份報告本身就是用「一群 AI 分工合作」做出來的——便宜的模型負責平行查資料、最強的模型負責統整，等於現場示範了它在講的東西"],
+     note:"這一頁是全篇的主軸：之後每一章都在解釋這個「大腦＋環境」的公式。"},
+    {type:"section",title:"基本觀念：三層功夫與 AI 的工作循環",num:"02"},
+    {type:"content",title:"由小到大的三層功夫：措辭 → 資訊 → 環境",
+     body:"幫 AI 做事的功夫可以分三層，後一層把前一層包在裡面，越往外範圍越大。",
+     bullets:["第一層 措辭（Prompt）：把單次問題問清楚、講明白。重要，但只顧這個還不夠",
+       "第二層 餵資訊（Context）：管理 AI 的「工作記憶」——它一次只能讀有限的內容，要安排好放什麼進去",
+       "這一層的關鍵難題：找出那組「<b>最少、但最有用</b>」的資訊，少了不行、多了反而干擾",
+       "第三層 佈置環境（Harness）：在前兩層之上，再加上工具、安全工作區、檢查回饋、任務調度與各種規範",
+       "業界（LangChain）的看法：所謂的「環境」，說穿了就是「把對的資訊、在對的時候送到 AI 面前」的一套機制"]},
+    {type:"content",title:"AI 的工作循環：做 → 看結果 → 修正",
+     body:"好的環境會讓 AI 不斷重複一個循環：動手做 → 觀察結果 → 發現錯誤就修正，像學生寫考卷後對答案、訂正、再寫一次。",
+     bullets:["完整流程：人提出需求 → 環境給 AI 指示、工具與規則 → AI 思考 → AI 動手用工具做事",
+       "安全工作區 ＋ 偵測器：在一個隔離的沙盒裡執行，並自動跑測試、檢查程式、甚至截圖比對畫面",
+       "檢查通過 → 正式送出修改；檢查失敗 → 把錯誤回報給 AI，自動再試一次",
+       "最關鍵的一點：失敗的訊息會<b>自動回灌</b>給 AI 讓它自己改，直到通過為止，不必每步都靠人盯",
+       "這套「做了再檢查、錯了自動改」的設計，OpenAI、Stripe、Anthropic 三家不約而同都用上了"]},
+    {type:"content",title:"最大的敵人：AI 會「讀越多、忘越多」",
+     body:"AI 一次能看的內容是有限的，而且塞得越滿、它對前面內容的記憶就越不準——很像你一次硬背太多東西，反而前面的就忘了。這在技術上叫「脈絡腐化（Context Rot）」，因為 AI 的「注意力」是有限資源。",
+     bullets:["實務上的甜蜜點：工作記憶只用到 <b>四到六成</b>最剛好（HumanLayer 建議）",
+       "實測的有效上限：大約 <b>17 萬字（token）</b>左右就開始明顯退步（Geoff Huntley 測試）",
+       "出錯的嚴重度排序：給<b>錯</b>的資訊 ＞ 漏掉資訊 ＞ 塞太多沒用的雜訊",
+       "真實事故：Meta 的 AI 因為在壓縮記憶時忘了規則，竟自動刪掉了數百封 email",
+       "解法：給 AI 的規則檔（AGENTS.md）要精簡（OpenAI 建議最多 100 行、最好 60 行）；ETH Zurich 也證實「塞太多反而變笨」"]},
+    {type:"section",title:"好環境的七個零件",num:"03"},
+    {type:"content",title:"打造好環境，需要這七個零件",
+     body:"報告把「鷹架」拆成七個可以分別設計的零件，組起來才是一個完整、好用的 AI 工作環境。",
+     bullets:["① 指示書：用五段式寫清楚（目標／環境／規則／範例／檢查清單），格式要分明",
+       "② 工具箱：每個工具功能單一、不重疊、說明清楚；Stripe 用一套統一接口（MCP）整合了 <b>400 多個工具</b>",
+       "③ 安全工作區：隔離的沙盒讓 AI 能放手做事；Stripe 的工作區預熱後 10 秒就能開工",
+       "④ 記憶機制：規則檔、進度紀錄、以及「只加不改」的事件日誌（像航海日誌）",
+       "⑤ 任務調度：派出 AI 小幫手分工與交接，並依難度選模型（簡單的用便宜模型、統籌用最強模型）",
+       "⑥⑦ 自動關卡與架構規範：用程式檢查、結構測試、上線前把關（CI）等機制硬性執行，而不只是寫在文件裡"],
+     note:"規範一定要用機制強制執行：光靠「寫在文件上請大家遵守」，壞習慣會像雪球一樣越滾越大。"},
+    {type:"section",title:"真實案例與關鍵數據",num:"04"},
+    {type:"content",title:"數據說話：環境好壞，直接決定成果",
+     body:"同一顆大腦、換不同環境，成績差很多——這是全篇最重要、最能服人的證據。",
+     bullets:["真實程式解題測驗（同樣用 Claude Opus）：Claude Code 拿 <b>77 分</b>、Cursor 拿 <b>93 分</b>，差了 16 分（yage.ai）",
+       "另一項終端機測驗：模型沒換、只把環境調好，名次就從第 30 名（52.8 分）衝進前 5 名（66.5 分）（LangChain）",
+       "OpenAI Codex：5 個月內寫出 <b>100 萬行</b>程式碼、人類零手寫、合併了 1,500 次修改",
+       "Stripe Minions：每週自動產出 <b>1,000 多次</b>程式修改，背後用了 400 多個工具",
+       "結論：環境（鷹架）設計得好不好，比模型本身強不強更關鍵"]},
+    {type:"content",title:"三個真實案例，三種心法",
+     body:"三家公司的實戰，各自印證了「好環境」的不同重點。",
+     bullets:["OpenAI Codex：團隊從 3 人擴到 7 人、每人每天約 3.5 次修改、AI 可連續無人看管做 6 小時以上",
+       "Codex 的心法：AI 工作時「拿不到的資訊，等於不存在」——所以要事先把該給的都備好",
+       "Stripe Minions：在 Slack 丟一句話，就能自動產出一個通過檢查的程式修改；心法是「對人類好用的，對 AI 也好用」",
+       "Anthropic 代理服務：把工作階段、環境、沙盒拆開設計，讓「等待第一個回應的時間」改善了 <b>九成以上</b>",
+       "Anthropic 的對比實驗：陽春版 AI 花 20 分鐘、9 美元做出來的東西根本不能用；完整環境下花 6 小時、200 美元，卻能做出功能完整的 app"]},
+    {type:"content",title:"讓一群 AI 合作：分工隔離 ＋ 互相挑錯",
+     body:"與其讓一個 AI 從頭做到尾，不如派出多個「AI 小幫手」各做一塊。每個小幫手在自己乾淨的小空間裡工作（像隔出防火牆），避免彼此干擾，也能把簡單工作交給便宜的模型省成本。",
+     bullets:["互相挑錯的循環：一個 AI 規劃 → 一個 AI 生成 → 一個 AI 評分挑毛病 → 反覆 5 到 15 次",
+       "依難度選模型：雜事交給便宜的小模型，統籌與整合才用最強的模型",
+       "一個重要陷阱：AI <b>很愛稱讚自己</b>——它常會對自己平庸的成果信心滿滿",
+       "所以解法是：另外派一個「獨立評審 AI」專門把關品質，不能讓它自己改自己的考卷"]},
+    {type:"section",title:"動態工作流程：把理論變成實際產品",num:"05"},
+    {type:"content",title:"動態工作流程是什麼？",
+     body:"它是 Claude 自己寫出來的一段小程式，用來「指揮」一大群 AI 小幫手大規模分工合作。簡單說：與其每一步都臨時決定，不如先把整個合作計畫寫成程式碼來照著跑（目前還是早期試用階段）。",
+     bullets:["核心好處：<b>把計畫寫成程式</b>，因此整個合作過程可以重複執行、也能中斷後接著跑",
+       "怎麼運作：程式在背景的隔離環境裡執行，過程中的草稿都存在程式變數裡，<b>只把最後的答案</b>帶回來給你看（不佔用 AI 的工作記憶）",
+       "使用條件：Claude Code v2.1.154 以上，所有付費方案都能用（Pro 方案需手動開啟）",
+       "可以套用「互相挑錯」等品管手法，結果比「一次做完就交」更可靠",
+       "怎麼啟動：句子裡帶 workflow 關鍵字、用 /effort ultracode、或執行內建的 /deep-research"]},
+    {type:"content",title:"它能做多大？又有哪些限制？",
+     body:"為了不失控，這套系統設了明確的上限和權限規則，確保整個過程可控、可恢復。",
+     bullets:["規模：一次可動用<b>數十到數百個 AI 小幫手</b>（相比之下，平常的方式每輪只派少少幾個）",
+       "硬性上限：最多 16 個同時並行、單次執行最多 1,000 個小幫手（避免無限迴圈失控）",
+       "限制：這段程式自己不能直接碰檔案或下指令，所有實際動作都得交給 AI 小幫手；而且跑到一半不能插話",
+       "權限：小幫手會在「自動接受修改」模式下執行並沿用既有的工具權限；但碰到系統指令或外部工具仍可能跳出來問你",
+       "/deep-research：唯一的內建工作流程，會交叉比對來源、對每個說法投票、把沒通過的說法剔除"],
+     note:"做好的工作流程可存到專案資料夾（團隊共用）或個人資料夾（自己跨專案用）；同名時以專案的優先。"},
+    {type:"comparison",title:"理論 vs 實作（一）：兩份來源剛好互補",
+     body:"一份談原則（為什麼），一份是實際產品（怎麼做），合起來就是完整的一套。",
+     bullets:["來源一（研究報告）：講清楚「好環境」的概念、設計原則與商業道理——回答<b>「為什麼」</b>",
+       "來源二（官方文件）：在 Claude Code 上實際能操作的介面——回答<b>「怎麼做」</b>",
+       "共同的核心：都把「AI 小幫手」當成分工合作的最基本單位",
+       "省錢做法：來源一說「便宜模型做雜事」＝來源二說「不需最強模型的步驟就改用小模型」",
+       "隔離做法：來源一說「各自在乾淨空間工作」＝來源二說「草稿存程式變數、只把最終答案帶回來」"]},
+    {type:"comparison",title:"理論 vs 實作（二）：計畫由誰來掌握？三種做法",
+     body:"來源二把 AI 合作分成三種，正好對應來源一講的調度觀念，差別在於「誰來決定下一步」。",
+     bullets:["子代理（小幫手）：由 Claude 一輪一輪臨時決定，草稿會佔用工作記憶，每輪只派少量",
+       "技能：Claude 照著既定步驟走，規模和小幫手差不多",
+       "工作流程：由<b>程式</b>決定流程，草稿存變數、可動用數十到數百個、還能中斷後接著跑",
+       "對應到來源一：工作流程就是把「工作循環」與「多 AI 合作」寫成可重複執行的程式版本",
+       "工作流程的「互相挑錯」≈ 來源一說的「獨立評審 AI」，都是為了克服「AI 愛稱讚自己」的毛病"]},
+    {type:"section",title:"這會怎麼影響商業競爭？還有哪些爭論",num:"06"},
+    {type:"content",title:"競爭優勢正在「往上搬家」",
+     body:"以前大家拼模型，現在模型越來越像、誰都買得到，於是真正的競爭優勢（俗稱「護城河」）正往上層搬——搬到「工作環境」與「管理治理」這兩層。",
+     bullets:["價值鏈分層（由下往上）：模型（人人都有）→ 共通規格 → 工作環境（鷹架）→ 治理管理層",
+       "其中「工作環境」與「治理管理」這兩層，才是真正難被模仿的護城河",
+       "一句業界名言：<b>「客戶留得住才是黏著力，模型只是過客」</b>（yage.ai）",
+       "Anthropic 的兩手策略：一邊限制別家模型接入自家產品，一邊又在 Cowork 裡支援 GPT-5.5、Gemini 3.1 Pro、DeepSeek V4",
+       "工作流程也印證了這點：它同時支援多家雲端模型平台，價值不押在某顆模型，而是押在「協調與管理」這一層"]},
+    {type:"content",title:"五個還沒有定論的爭論",
+     body:"報告很誠實地把目前業界還在吵、沒有標準答案的問題也攤開來講。",
+     bullets:["環境要一次設計好，還是邊做邊改？OpenAI 主張先規劃好，HumanLayer 等主張邊用邊長，Anthropic 折衷",
+       "模型越來越強，環境設計會不會變得沒那麼重要？有人說會一直重要，有人說價值會轉移",
+       "護城河到底在模型層、還是在面對客戶的產品介面層？yage.ai 押客戶端，Anthropic 押介面",
+       "怎麼驗證 AI 做的東西真的對？有人認為這最難、別太信 AI 自己寫的測試；Anthropic 則用工具做端到端實測",
+       "壓縮 AI 的記憶有代價：壓得太狠，原本要遵守的規則可能會被一起忘掉"]},
+    {type:"section",title:"結論",num:"07"},
+    {type:"conclusion",title:"結論",
+     body:"兩份資料指向同一個趨勢：當好模型人人都有，真正決勝負的關鍵，已經從「模型本身」轉移到「包在模型外面的工作環境」。研究報告告訴我們「為什麼」——同一顆大腦換環境，成績能差 16 分；官方文件示範「怎麼做」——把合作計畫寫成可重複、可恢復的程式，再用「互相挑錯」等品管手法把結果做可靠。兩者在「分工隔離」「省錢選模型」「多 AI 合作」上完全呼應：一個講原則，一個給工具。",
+     bullets:["重點轉移：工程的核心從「寫程式」變成「設計環境」，環境好壞勝過模型強弱",
+       "理論與實作互補：原則（來源一）與可操作工具（來源二）互相印證",
+       "做得可靠的關鍵：互相挑錯、獨立評審、交叉比對來源",
+       "誠實交代限制：來源一有 2 篇因付費牆／驗證碼沒抓到、名詞表未完整呈現；工作流程也還在早期試用階段"]},
+    {type:"references",title:"參考來源",
+     bullets:["《鷹架工程 Harness Engineering ── 2025–2026 AI Agent 環境設計全解析》工程研究報告（綜合 16 個一手來源、14 篇深入分析）",
+       "Claude Code 官方文件：《使用動態工作流程大規模協調子代理（Dynamic Workflows）》繁體中文版",
+       "報告引用之組織與作者：OpenAI（Codex）、Stripe（Minions、Toolshed、Devbox）、Anthropic（Managed Agents、Cowork）",
+       "量測與觀點來源：Cursor、yage.ai、LangChain、HumanLayer、ETH Zurich、Geoff Huntley、Meta、Mitchell、Böckeler",
+       "註記：來源一術語表與部分來源 URL 為前端動態載入，靜態抓取未完整呈現；精確細節以原始公開文章為準"]}
+  ]
+};
+
+const deck = document.getElementById('deck');
+const slides = DATA.slides;
+
+function render(){
+  slides.forEach((s,idx)=>{
+    const el = document.createElement('section');
+    el.className = 'slide '+s.type;
+    let html = '';
+    if(s.type==='cover'){
+      html += `<div class="badge"><span class="dot"></span>學術報告簡報 · Academic Report</div>`;
+      html += `<h1>${s.title}</h1>`;
+      if(s.subtitle) html += `<div class="subtitle">${s.subtitle}</div>`;
+      html += `<div class="rule"></div>`;
+      if(s.body) html += `<div class="body">${s.body}</div>`;
+      html += `<div class="meta">資料來源｜Harness Engineering 研究報告 × Claude Code Dynamic Workflows 官方文件<br>製作方式｜Workflow 多代理協調（Sonnet 平行分析 → Sonnet 綜合 → HTML 簡報）</div>`;
+    } else if(s.type==='section'){
+      html += `<div class="num">${s.num||''}</div>`;
+      html += `<h2>${s.title}</h2>`;
+      html += `<div class="rule"></div>`;
+    } else {
+      const kick = {content:'論述',toc:'導覽',comparison:'整合分析',conclusion:'總結',references:'引用'}[s.type]||'論述';
+      html += `<div class="kicker">${kick}</div>`;
+      html += `<h2>${s.title}</h2>`;
+      if(s.body) html += `<div class="body">${s.body}</div>`;
+      if(s.bullets){
+        html += '<ul class="bullets">';
+        s.bullets.forEach((b,i)=> html += `<li style="--i:${i}">${b}</li>`);
+        html += '</ul>';
+      }
+    }
+    if(s.note) html += `<div class="note"><span class="tag">講者備註</span><span>${s.note}</span></div>`;
+    el.innerHTML = html;
+    deck.appendChild(el);
+  });
+}
+render();
+
+let cur = 0;
+const els = Array.from(document.querySelectorAll('.slide'));
+document.getElementById('total').textContent = slides.length;
+const bar = document.getElementById('bar');
+
+function show(n){
+  cur = Math.max(0, Math.min(slides.length-1, n));
+  els.forEach((e,i)=>e.classList.toggle('active', i===cur));
+  document.getElementById('cur').textContent = cur+1;
+  bar.style.width = ((cur)/(slides.length-1)*100)+'%';
+  location.hash = cur+1;
+}
+function next(){show(cur+1)}
+function prev(){show(cur-1)}
+
+document.getElementById('next').onclick=next;
+document.getElementById('prev').onclick=prev;
+
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+  else if(e.key==='Home'){show(0)}
+  else if(e.key==='End'){show(slides.length-1)}
+  else if(e.key.toLowerCase()==='f'){toggleFs()}
+  else if(e.key.toLowerCase()==='n'){document.body.classList.toggle('notes')}
+  else if(e.key.toLowerCase()==='o'){toggleOverview()}
+});
+
+function toggleFs(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+
+// click halves to navigate
+deck.addEventListener('click',e=>{
+  if(e.target.closest('.navbtn')) return;
+  const x = e.clientX / window.innerWidth;
+  if(x>0.6) next(); else if(x<0.4) prev();
+});
+
+// swipe
+let tx=null;
+deck.addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+deck.addEventListener('touchend',e=>{
+  if(tx===null) return;
+  const dx = e.changedTouches[0].clientX - tx;
+  if(Math.abs(dx)>50){ dx<0?next():prev() }
+  tx=null;
+});
+
+// overview grid
+let overlay=null;
+function toggleOverview(){
+  if(overlay){overlay.remove();overlay=null;return}
+  overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(8,12,20,.97);z-index:50;overflow:auto;padding:4vh 4vw;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px';
+  slides.forEach((s,i)=>{
+    const c=document.createElement('button');
+    c.style.cssText='text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--ink);cursor:pointer;font-family:inherit;min-height:110px';
+    c.innerHTML=`<div style="font-size:.7rem;color:var(--accent);letter-spacing:.15em">${String(i+1).padStart(2,'0')} · ${s.type.toUpperCase()}</div><div style="margin-top:8px;font-size:.95rem;line-height:1.4">${s.title}</div>`;
+    c.onclick=()=>{show(i);toggleOverview()};
+    overlay.appendChild(c);
+  });
+  document.body.appendChild(overlay);
+}
+
+const fromHash = parseInt(location.hash.replace('#',''))||1;
+show(fromHash-1);
+</script>
+</body>
+</html>
